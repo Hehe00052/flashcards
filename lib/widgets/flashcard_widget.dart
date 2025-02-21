@@ -9,6 +9,7 @@ class FlashcardWidget extends StatelessWidget {
   final VoidCallback onFlipEnd;
   final VoidCallback onDelete;
   final VoidCallback onEdit; 
+  final bool showExtraText;
 
   const FlashcardWidget({
     super.key,
@@ -18,6 +19,7 @@ class FlashcardWidget extends StatelessWidget {
     required this.onFlipEnd,
     required this.onDelete,
     required this.onEdit, 
+    required this.showExtraText,
   });
 
   @override
@@ -79,7 +81,7 @@ class FlashcardWidget extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
           ),
-          if (parts.length > 1) ...[
+          if (parts.length > 1 && showExtraText) ...[
             const SizedBox(height: 5),
             Text(
               "/${parts[1]}",
