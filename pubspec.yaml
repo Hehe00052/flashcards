@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   flip_card: ^0.7.0
   path_provider: ^2.1.5
+  file_picker: ^5.2.10
+  docx_to_text: ^1.0.1
 
 dev_dependencies:
   flutter_test:
