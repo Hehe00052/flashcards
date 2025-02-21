@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
       // Use file picker to select a file
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['txt', 'doc', 'docx'],
+        allowedExtensions: ['txt', 'docx'],
       );
 
       if (result != null) {
