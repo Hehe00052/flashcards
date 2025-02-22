@@ -68,7 +68,7 @@ class RandomCardSelector {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              appLocalizations.get('selectingRandom'), // Sử dụng bản địa hóa
+              appLocalizations.get('selectingRandom'),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),

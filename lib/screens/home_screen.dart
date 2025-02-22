@@ -10,6 +10,7 @@ import '../utils/flashcard_operations.dart';
 import 'package:provider/provider.dart';
 import '../providers/settings_provider.dart';
 import '../translations/app_localizations.dart';
+import '../widgets/home_app_bar_actions.dart';  
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -171,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _addFlashcard() async {
     await FlashcardOperations.addFlashcard(
-      context: context, // Sử dụng named parameter
+      context: context,
       flashcards: flashcards,
       onUpdate: (updatedCards) => setState(() => flashcards = updatedCards),
     );
@@ -179,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _editFlashcard(Flashcard card) async {
     await FlashcardOperations.editFlashcard(
-      context: context, // Sử dụng named parameter
+      context: context,
       card: card,
       flashcards: flashcards,
       onUpdate: (updatedCards) => setState(() => flashcards = updatedCards),
@@ -188,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _removeFlashcard(Flashcard card) async {
     await FlashcardOperations.removeFlashcard(
-      context: context, // Sử dụng named parameter
+      context: context,
       card: card,
       flashcards: flashcards,
       onUpdate: (updatedCards) => setState(() => flashcards = updatedCards),
@@ -243,71 +244,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildAppBarActions(bool isSmallScreen) {
-    final appLocalizations = AppLocalizations.of(context);
-
-    if (isSmallScreen) {
-      return [
-        IconButton(
-          icon: Icon(
-            Provider.of<SettingsProvider>(context).themeMode == ThemeMode.dark
-                ? Icons.dark_mode
-                : Icons.light_mode,
-          ),
-          onPressed: () {
-            Provider.of<SettingsProvider>(context, listen: false).toggleTheme();
-          },
-          tooltip: appLocalizations.get('toggleTheme'),
-        ),
-      ];
-    } else {
-      return [
-        IconButton(
-          icon: Icon(
-            Provider.of<SettingsProvider>(context).themeMode == ThemeMode.dark
-                ? Icons.dark_mode
-                : Icons.light_mode,
-          ),
-          onPressed: () {
-            Provider.of<SettingsProvider>(context, listen: false).toggleTheme();
-          },
-          tooltip: appLocalizations.get('toggleTheme'),
-        ),
-        IconButton(
-          icon: const Icon(Icons.language),
-          onPressed: () {
-            Provider.of<SettingsProvider>(context, listen: false).toggleLanguage();
-          },
-          tooltip: appLocalizations.get('toggleLanguage'),
-        ),
-        IconButton(
-          icon: const Icon(Icons.file_upload),
-          onPressed: _importFlashcards,
-          tooltip: appLocalizations.get('importFromFile'),
-        ),
-        IconButton(
-          icon: Icon(_showExtraText ? Icons.visibility : Icons.visibility_off),
-          onPressed: () {
-            setState(() {
-              _showExtraText = !_showExtraText;
-            });
-          },
-          tooltip: _showExtraText
-              ? appLocalizations.get('hideExtraText')
-              : appLocalizations.get('showExtraText'),
-        ),
-        IconButton(
-          icon: const Icon(Icons.shuffle),
-          onPressed: _shuffleFlashcards,
-          tooltip: appLocalizations.get('shuffleCards'),
-        ),
-        IconButton(
-          icon: const Icon(Icons.casino),
-          onPressed: _showRandomFlashcard,
-          tooltip: appLocalizations.get('randomCard'),
-        ),
-      ];
-    }
-  }
+  return [
+    HomeAppBarActions(
+      isSmallScreen: isSmallScreen,
+      showExtraText: _showExtraText,
+      onImportFlashcards: _importFlashcards,
+      onToggleExtraText: () {
+        setState(() {
+          _showExtraText = !_showExtraText;
+        });
+      },
+      onShuffleFlashcards: _shuffleFlashcards,
+      onShowRandomFlashcard: _showRandomFlashcard,
+    ),
+  ];
+}
 
   Widget _buildDrawer() {
     final appLocalizations = AppLocalizations.of(context);
