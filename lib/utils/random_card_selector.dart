@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:math';
 import '../models/flashcard.dart';
+import '../translations/app_localizations.dart'; // Thêm import này để truy cập AppLocalizations
 
 class RandomCardSelector {
   final Random _random = Random();
-  
+
   /// Hiển thị animation chọn thẻ ngẫu nhiên và sau đó hiển thị thẻ được chọn
   void showRandomFlashcard({
     required BuildContext context,
@@ -15,7 +16,7 @@ class RandomCardSelector {
     required Function(bool newShowBackSide) onFlipCard,
   }) {
     if (flashcards.isEmpty) return;
-    
+
     // Hiển thị hiệu ứng "đang chọn ngẫu nhiên"
     showDialog(
       context: context,
@@ -39,6 +40,8 @@ class RandomCardSelector {
     required Function(Flashcard selectedCard) onCardSelected,
     required Function(bool newShowBackSide) onFlipCard,
   }) {
+    final appLocalizations = AppLocalizations.of(context); // Truy cập AppLocalizations
+
     // Sau 1.5 giây, chọn thẻ và hiển thị
     Future.delayed(const Duration(milliseconds: 900), () {
       Navigator.of(context).pop(); // Đóng dialog animation
@@ -51,7 +54,7 @@ class RandomCardSelector {
         onFlipCard: onFlipCard,
       );
     });
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -64,9 +67,9 @@ class RandomCardSelector {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
-              "Đang chọn ngẫu nhiên...",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              appLocalizations.get('selectingRandom'), // Sử dụng bản địa hóa
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             TweenAnimationBuilder(
@@ -87,11 +90,11 @@ class RandomCardSelector {
                             // Calculate radius for positioning
                             final radius = 35.0; // Distance from center
                             final angle = 2 * 3.14 * ((index / 5) + (value * 2));
-                            
+
                             // Calculate x,y position in circle
                             final x = radius * cos(angle);
                             final y = radius * sin(angle);
-                            
+
                             return Transform.translate(
                               offset: Offset(x, y),
                               child: Transform.rotate(
@@ -117,7 +120,7 @@ class RandomCardSelector {
                               ),
                             );
                           }),
-                                                  ],
+                        ],
                       ),
                     ),
                   ],
@@ -139,11 +142,11 @@ class RandomCardSelector {
     required Function(bool newShowBackSide) onFlipCard,
   }) {
     if (flashcards.isEmpty) return;
-    
+
     int randomIndex = _random.nextInt(flashcards.length);
     Flashcard selectedFlashcard = flashcards[randomIndex];
     onCardSelected(selectedFlashcard);
-    
+
     // Hiệu ứng xuất hiện thẻ
     _showFlashcardWithAnimation(
       context: context,
@@ -165,6 +168,8 @@ class RandomCardSelector {
     List<String> backParts = selectedFlashcard.back.split(" /");
     bool dialogShowExtraText = showExtraText;
 
+    final appLocalizations = AppLocalizations.of(context); // Truy cập AppLocalizations
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -184,8 +189,10 @@ class RandomCardSelector {
                   children: [
                     const Icon(Icons.auto_awesome, color: Colors.amber),
                     const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text("Tada, random trúng kái lày gòi nè :3"),
+                    Expanded(
+                      child: Text(
+                        appLocalizations.get('randomCardSelected'), // Sử dụng bản địa hóa
+                      ),
                     ),
                   ],
                 ),
@@ -207,16 +214,16 @@ class RandomCardSelector {
                     padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: showBackSide 
-                          ? [Colors.orange.shade300, Colors.orange.shade500]
-                          : [Colors.blue.shade300, Colors.blue.shade500],
+                        colors: showBackSide
+                            ? [Colors.orange.shade300, Colors.orange.shade500]
+                            : [Colors.blue.shade300, Colors.blue.shade500],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(15),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withAlpha(51), 
+                          color: Colors.black.withAlpha(51),
                           blurRadius: 10,
                           offset: const Offset(0, 5),
                         ),
@@ -242,16 +249,16 @@ class RandomCardSelector {
                           ),
                         ),
                         if ((showBackSide && backParts.length > 1 ||
-                            !showBackSide && frontParts.length > 1) &&
+                                !showBackSide && frontParts.length > 1) &&
                             dialogShowExtraText) ...[
                           const SizedBox(height: 12),
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12, 
+                              horizontal: 12,
                               vertical: 6,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(51), // 0.2 * 255 = 51
+                              color: Colors.white.withAlpha(51),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -282,16 +289,18 @@ class RandomCardSelector {
                         dialogShowExtraText = !dialogShowExtraText;
                       });
                     },
-                    tooltip: dialogShowExtraText ? "Ẩn phần text phụ" : "Hiện phần text phụ",
+                    tooltip: dialogShowExtraText
+                        ? appLocalizations.get('hideExtraText')
+                        : appLocalizations.get('showExtraText'),
                   ),
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text("Đóng"),
+                    child: Text(appLocalizations.get('close')),
                   ),
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: showBackSide 
-                          ? Colors.blue.shade400 
+                      backgroundColor: showBackSide
+                          ? Colors.blue.shade400
                           : Colors.orange.shade400,
                     ),
                     onPressed: () {
@@ -307,14 +316,16 @@ class RandomCardSelector {
                       );
                     },
                     child: Text(
-                      showBackSide ? "Xem mặt trước" : "Xem mặt sau",
+                      showBackSide
+                          ? appLocalizations.get('viewFront')
+                          : appLocalizations.get('viewBack'),
                       style: const TextStyle(color: Colors.white),
                     ),
                   ),
                 ],
               ),
             );
-          }
+          },
         );
       },
     );

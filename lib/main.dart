@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'providers/settings_provider.dart';
+import 'translations/app_localizations.dart';
 
 void main() {
   runApp(
@@ -28,6 +29,7 @@ class FlashcardApp extends StatelessWidget {
           locale: settings.locale,
           supportedLocales: const [Locale('en'), Locale('vi')],
           localizationsDelegates: const [
+            AppLocalizationsDelegate(),
             GlobalMaterialLocalizations.delegate,
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,

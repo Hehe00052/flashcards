@@ -6,9 +6,10 @@ import '../models/flashcard.dart';
 import '../widgets/flashcard_widget.dart';
 import '../utils/file_loader.dart';
 import '../utils/random_card_selector.dart';
+import '../utils/flashcard_operations.dart';
 import 'package:provider/provider.dart';
-
 import '../providers/settings_provider.dart';
+import '../translations/app_localizations.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -33,15 +34,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadFlashcards() async {
-    List<Flashcard> loadedFlashcards = await FileLoader.loadFlashcards();
+    List<Flashcard> loadedFlashcards = await FileLoader.loadFlashcards(context: context);
     setState(() {
       flashcards = loadedFlashcards;
     });
   }
 
   Future<void> _importFlashcards() async {
+    final appLocalizations = AppLocalizations.of(context);
+
     try {
-      // Use file picker to select a file
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['txt', 'docx'],
@@ -50,56 +52,65 @@ class _HomeScreenState extends State<HomeScreen> {
       if (result != null) {
         File file = File(result.files.single.path!);
 
-        // Show loading indicator
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (BuildContext context) {
-            return const AlertDialog(
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text("Đang nhập dữ liệu..."),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  Text(appLocalizations.get('loading')),
                 ],
               ),
             );
           },
         );
 
-        // Process the file
-        List<Flashcard> importedCards =
-            await FileLoader.importFlashcardsFromFile(file);
+        List<Flashcard> importedCards = await FileLoader.importFlashcardsFromFile(file, context: context);
 
-        // Pop loading dialog
         Navigator.pop(context);
 
         if (importedCards.isEmpty) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Không tìm thấy dữ liệu hợp lệ trong file."),
+            SnackBar(
+              content: Text(appLocalizations.get('noValidData')),
             ),
           );
           return;
         }
 
-        // Show confirm dialog with preview
         showDialog(
           context: context,
           builder: (context) => _buildImportDialog(importedCards),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Lỗi khi nhập file: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            appLocalizations.getWithArgs(
+              'errorImportingFile',
+              {'error': e.toString()},
+            ),
+          ),
+        ),
+      );
     }
   }
 
   Widget _buildImportDialog(List<Flashcard> importedCards) {
+    final appLocalizations = AppLocalizations.of(context);
+
     return AlertDialog(
-      title: Text("Đã tìm thấy ${importedCards.length} flashcard"),
+      title: Text(
+        appLocalizations.getWithArgs(
+          'foundFlashcards',
+          {'count': importedCards.length},
+        ),
+      ),
       content: Container(
         constraints: const BoxConstraints(maxHeight: 300),
         width: MediaQuery.of(context).size.width * 0.8,
@@ -108,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text("Xem trước 5 thẻ đầu tiên:"),
+              Text(appLocalizations.get('previewFirst5')),
               const SizedBox(height: 8),
               ...importedCards.take(5).map((card) {
                 return Card(
@@ -118,8 +129,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Front: ${card.front}"),
-                        Text("Back: ${card.back}"),
+                        Text("${appLocalizations.get('front')}: ${card.front}"),
+                        Text("${appLocalizations.get('back')}: ${card.back}"),
                       ],
                     ),
                   ),
@@ -132,131 +143,56 @@ class _HomeScreenState extends State<HomeScreen> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text("Hủy"),
+          child: Text(appLocalizations.get('cancel')),
         ),
         TextButton(
           onPressed: () async {
-            // Add imported cards to current collection
             setState(() {
               flashcards.addAll(importedCards);
             });
-            // Save to file
-            await FileLoader.saveFlashcards(flashcards);
+            await FileLoader.saveFlashcards(flashcards, context: context);
             Navigator.pop(context);
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text("Đã thêm ${importedCards.length} flashcard mới"),
+                content: Text(
+                  appLocalizations.getWithArgs(
+                    'addedNewFlashcards',
+                    {'count': importedCards.length},
+                  ),
+                ),
               ),
             );
           },
-          child: const Text("Nhập dữ liệu"),
+          child: Text(appLocalizations.get('importData')),
         ),
       ],
     );
   }
 
   Future<void> _addFlashcard() async {
-    TextEditingController frontController = TextEditingController();
-    TextEditingController backController = TextEditingController();
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dialogWidth = screenWidth < 600 ? screenWidth * 0.9 : 400.0;
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text("Thêm Flashcard"),
-            content: Container(
-              width: dialogWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: frontController,
-                    decoration: const InputDecoration(labelText: "Mặt trước"),
-                  ),
-                  TextField(
-                    controller: backController,
-                    decoration: const InputDecoration(labelText: "Mặt sau"),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  Flashcard newCard = Flashcard(
-                    front: frontController.text,
-                    back: backController.text,
-                  );
-                  setState(() {
-                    flashcards.add(newCard);
-                  });
-                  await FileLoader.saveFlashcards(flashcards);
-                  Navigator.pop(context);
-                },
-                child: const Text("Thêm"),
-              ),
-            ],
-          ),
+    await FlashcardOperations.addFlashcard(
+      context: context, // Sử dụng named parameter
+      flashcards: flashcards,
+      onUpdate: (updatedCards) => setState(() => flashcards = updatedCards),
     );
   }
 
   Future<void> _editFlashcard(Flashcard card) async {
-    TextEditingController frontController = TextEditingController(
-      text: card.front,
-    );
-    TextEditingController backController = TextEditingController(
-      text: card.back,
-    );
-
-    final screenWidth = MediaQuery.of(context).size.width;
-    final dialogWidth = screenWidth < 600 ? screenWidth * 0.9 : 400.0;
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text("Chỉnh sửa Flashcard"),
-            content: Container(
-              width: dialogWidth,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: frontController,
-                    decoration: const InputDecoration(labelText: "Mặt trước"),
-                  ),
-                  TextField(
-                    controller: backController,
-                    decoration: const InputDecoration(labelText: "Mặt sau"),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () async {
-                  setState(() {
-                    card.front = frontController.text;
-                    card.back = backController.text;
-                  });
-                  await FileLoader.saveFlashcards(flashcards);
-                  Navigator.pop(context);
-                },
-                child: const Text("Lưu"),
-              ),
-            ],
-          ),
+    await FlashcardOperations.editFlashcard(
+      context: context, // Sử dụng named parameter
+      card: card,
+      flashcards: flashcards,
+      onUpdate: (updatedCards) => setState(() => flashcards = updatedCards),
     );
   }
 
   Future<void> _removeFlashcard(Flashcard card) async {
-    setState(() {
-      flashcards.remove(card);
-    });
-    await FileLoader.saveFlashcards(flashcards);
+    await FlashcardOperations.removeFlashcard(
+      context: context, // Sử dụng named parameter
+      card: card,
+      flashcards: flashcards,
+      onUpdate: (updatedCards) => setState(() => flashcards = updatedCards),
+    );
   }
 
   Future<void> _shuffleFlashcards() async {
@@ -290,10 +226,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 600;
+    final appLocalizations = AppLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Flashcards"),
+        title: Text(appLocalizations.get('flashcards')),
         actions: _buildAppBarActions(isSmallScreen),
       ),
       floatingActionButton: FloatingActionButton(
@@ -306,6 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildAppBarActions(bool isSmallScreen) {
+    final appLocalizations = AppLocalizations.of(context);
+
     if (isSmallScreen) {
       return [
         IconButton(
@@ -317,7 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
           onPressed: () {
             Provider.of<SettingsProvider>(context, listen: false).toggleTheme();
           },
-          tooltip: "Chuyển chế độ sáng/tối",
+          tooltip: appLocalizations.get('toggleTheme'),
         ),
       ];
     } else {
@@ -331,22 +270,19 @@ class _HomeScreenState extends State<HomeScreen> {
           onPressed: () {
             Provider.of<SettingsProvider>(context, listen: false).toggleTheme();
           },
-          tooltip: "Chuyển chế độ sáng/tối",
+          tooltip: appLocalizations.get('toggleTheme'),
         ),
         IconButton(
           icon: const Icon(Icons.language),
           onPressed: () {
-            Provider.of<SettingsProvider>(
-              context,
-              listen: false,
-            ).toggleLanguage();
+            Provider.of<SettingsProvider>(context, listen: false).toggleLanguage();
           },
-          tooltip: "Chuyển ngôn ngữ",
+          tooltip: appLocalizations.get('toggleLanguage'),
         ),
         IconButton(
           icon: const Icon(Icons.file_upload),
           onPressed: _importFlashcards,
-          tooltip: "Nhập từ file",
+          tooltip: appLocalizations.get('importFromFile'),
         ),
         IconButton(
           icon: Icon(_showExtraText ? Icons.visibility : Icons.visibility_off),
@@ -355,52 +291,53 @@ class _HomeScreenState extends State<HomeScreen> {
               _showExtraText = !_showExtraText;
             });
           },
-          tooltip: _showExtraText ? "Ẩn phần text phụ" : "Hiện phần text phụ",
+          tooltip: _showExtraText
+              ? appLocalizations.get('hideExtraText')
+              : appLocalizations.get('showExtraText'),
         ),
         IconButton(
           icon: const Icon(Icons.shuffle),
           onPressed: _shuffleFlashcards,
-          tooltip: "Xáo trộn thẻ",
+          tooltip: appLocalizations.get('shuffleCards'),
         ),
         IconButton(
           icon: const Icon(Icons.casino),
           onPressed: _showRandomFlashcard,
-          tooltip: "Chọn ngẫu nhiên một thẻ",
+          tooltip: appLocalizations.get('randomCard'),
         ),
       ];
     }
   }
 
   Widget _buildDrawer() {
+    final appLocalizations = AppLocalizations.of(context);
+
     return Drawer(
       child: SafeArea(
         child: Column(
           children: [
             ListTile(
               leading: const Icon(Icons.language),
-              title: const Text("Chuyển ngôn ngữ"),
+              title: Text(appLocalizations.get('toggleLanguage')),
               onTap: () {
-                Provider.of<SettingsProvider>(
-                  context,
-                  listen: false,
-                ).toggleLanguage();
+                Provider.of<SettingsProvider>(context, listen: false).toggleLanguage();
                 Navigator.pop(context);
               },
             ),
             ListTile(
               leading: const Icon(Icons.file_upload),
-              title: const Text("Nhập từ file"),
+              title: Text(appLocalizations.get('importFromFile')),
               onTap: () {
                 Navigator.pop(context);
                 _importFlashcards();
               },
             ),
             ListTile(
-              leading: Icon(
-                _showExtraText ? Icons.visibility : Icons.visibility_off,
-              ),
+              leading: Icon(_showExtraText ? Icons.visibility : Icons.visibility_off),
               title: Text(
-                _showExtraText ? "Ẩn phần text phụ" : "Hiện phần text phụ",
+                _showExtraText
+                    ? appLocalizations.get('hideExtraText')
+                    : appLocalizations.get('showExtraText'),
               ),
               onTap: () {
                 setState(() {
@@ -411,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.shuffle),
-              title: const Text("Xáo trộn thẻ"),
+              title: Text(appLocalizations.get('shuffleCards')),
               onTap: () {
                 _shuffleFlashcards();
                 Navigator.pop(context);
@@ -419,7 +356,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.casino),
-              title: const Text("Chọn ngẫu nhiên một thẻ"),
+              title: Text(appLocalizations.get('randomCard')),
               onTap: () {
                 Navigator.pop(context);
                 _showRandomFlashcard();
@@ -432,12 +369,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBody(bool isSmallScreen) {
+    final appLocalizations = AppLocalizations.of(context);
+
     if (flashcards.isEmpty) {
       return Center(
         child: Text(
-          "Chưa có flashcard nào",
+          appLocalizations.get('noFlashcards'),
           style: TextStyle(
-            // Use the current theme's text color
             color: Theme.of(context).textTheme.bodyLarge?.color,
             fontSize: 16,
           ),
@@ -458,21 +396,20 @@ class _HomeScreenState extends State<HomeScreen> {
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
 
-        // Calculate optimal column count based on screen width
         int columnCount;
         if (screenWidth < 400) {
-          columnCount = 1; // Mobile portrait
+          columnCount = 1;
         } else if (screenWidth < 700) {
-          columnCount = 2; // Mobile landscape/small tablet
+          columnCount = 2;
         } else if (screenWidth < 1100) {
-          columnCount = 3; // Tablet/small desktop
+          columnCount = 3;
         } else {
-          columnCount = 4; // Desktop
+          columnCount = 4;
         }
 
         return GridView.builder(
           shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
+          physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columnCount,
             childAspectRatio: 0.9,
